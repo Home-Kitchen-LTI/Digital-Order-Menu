@@ -255,7 +255,7 @@
                     <label class="block text-xs font-bold text-gray-700 dark:text-zinc-300 mb-1">Kaedah Pesanan:</label>
                     <div class="grid grid-cols-2 gap-2">
                         <label class="flex items-center justify-center gap-1.5 p-2 rounded-xl border text-xs font-bold cursor-pointer transition-all bg-white dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700" id="label-cod">
-                            <input type="radio" name="order-method" value="COD" checked onclick="toggleMethod('COD')"> Delivery (COD)<br> (+RM 1.00)
+                            <input type="radio" name="order-method" value="COD" checked onclick="toggleMethod('COD')"> Delivery (COD)<br> (+RM 0.00)
                         </label>
                         <label class="flex items-center justify-center gap-1.5 p-2 rounded-xl border text-xs font-bold cursor-pointer transition-all bg-white dark:bg-zinc-800 dark:text-zinc-200 dark:border-zinc-700" id="label-pickup">
                             <input type="radio" name="order-method" value="PICKUP" onclick="toggleMethod('PICKUP')"> Self Pick Up <br> Fasa 1, Lorong 19
@@ -661,7 +661,7 @@
                 total += qty * menu.price;
                 totalQty += qty;
             });
-            if (totalQty > 0 && window.selectedMethod === 'COD') total += 1.00;
+            if (totalQty > 0 && window.selectedMethod === 'COD') total += 0.00;
             const totalPriceTag = document.getElementById('total-price-tag');
             if (totalPriceTag) totalPriceTag.innerText = `RM ${total.toFixed(2)}`;
         }
@@ -850,7 +850,7 @@
                 address = document.getElementById('delivery-address').value.trim();
                 if (!address) { showToast("Sila isi alamat!"); return; }
                 total += 1.00;
-                deliveryText = `🛵 *Kaedah:* Delivery\n💵 *Caj COD:* +RM 1.00\n📍 *Alamat:* ${address} (${window.selectedPhase})\n`;
+                deliveryText = `🛵 *Kaedah:* Delivery\n💵 *Caj COD:* +RM 0.00\n📍 *Alamat:* ${address} (${window.selectedPhase})\n`;
             } else {
                 deliveryText = `🏪 *Kaedah:* Self Pick Up\n`;
             }
