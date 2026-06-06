@@ -486,8 +486,12 @@
                 querySnapshot.forEach((doc) => {
                     fetchedMenus.push({ ...doc.data(), docId: doc.id });
                 });
-                // Sort mengikut ID hidangan
-                window.menus = fetchedMenus.sort((a, b) => Number(a.id) - Number(b.id));
+                // Sort mengikut orderIndex (jika wujud) atau fallback kepada ID
+                window.menus = fetchedMenus.sort((a, b) => {
+                    const orderA = a.orderIndex !== undefined ? a.orderIndex : Number(a.id);
+                    const orderB = b.orderIndex !== undefined ? b.orderIndex : Number(b.id);
+                    return orderA - orderB;
+                });
                 
                 // Kekalkan atau init kuantiti troli
                 window.menus.forEach(menu => {
@@ -601,7 +605,7 @@
             const adminList = document.getElementById('admin-menu-list');
             adminList.innerHTML = '';
 
-            window.menus.forEach(menu => {
+            window.menus.forEach((menu, index) => {
                 const isSold = menu.sold === true;
                 const isHidden = menu.hidden === true;
 
@@ -618,11 +622,16 @@
                 const itemHtml = `
                     <div class="p-3 bg-white dark:bg-zinc-800 rounded-xl border border-gray-100 dark:border-zinc-700 shadow-xs flex flex-col gap-2 transition-all ${isHidden ? 'opacity-50' : ''}">
                         <div class="flex items-center justify-between gap-2">
-                            <div class="flex items-center gap-2 overflow-hidden">
+                            <div class="flex items-center gap-2 overflow-hidden w-full">
+                                <!-- BUTANG SUSUN -->
+                                <div class="flex flex-col gap-0.5 flex-shrink-0">
+                                    <button onclick="moveMenu(${index}, -1)" class="w-6 h-4 flex items-center justify-center bg-gray-100 hover:bg-gray-200 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-gray-500 dark:text-zinc-400 rounded transition-all text-[8px] ${index === 0 ? 'opacity-30 cursor-not-allowed' : ''}" ${index === 0 ? 'disabled' : ''}>▲</button>
+                                    <button onclick="moveMenu(${index}, 1)" class="w-6 h-4 flex items-center justify-center bg-gray-100 hover:bg-gray-200 dark:bg-zinc-700 dark:hover:bg-zinc-600 text-gray-500 dark:text-zinc-400 rounded transition-all text-[8px] ${index === window.menus.length - 1 ? 'opacity-30 cursor-not-allowed' : ''}" ${index === window.menus.length - 1 ? 'disabled' : ''}>▼</button>
+                                </div>
                                 <div class="w-8 h-8 rounded-lg bg-orange-100 dark:bg-zinc-700 flex items-center justify-center overflow-hidden flex-shrink-0">
                                     ${adminImageHtml}
                                 </div>
-                                <div class="truncate">
+                                <div class="truncate flex-1">
                                     <p class="text-xs font-bold text-gray-800 dark:text-zinc-100 truncate">${menu.name}</p>
                                     <div class="flex items-center gap-1.5">
                                         <p class="text-[10px] text-orange-600 dark:text-orange-400 font-extrabold">RM ${Number(menu.price).toFixed(2)}</p>
@@ -657,8 +666,8 @@
                 const img = new Image();
                 img.onload = function() {
                     const canvas = document.createElement('canvas');
-                    const MAX_WIDTH = 300;
-                    const MAX_HEIGHT = 300;
+                    const MAX_WIDTH = 800;
+                    const MAX_HEIGHT = 800;
                     let width = img.width;
                     let height = img.height;
 
@@ -679,8 +688,8 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(img, 0, 0, width, height);
 
-                    // Mampatkan imej kepada data URL JPEG kualiti 0.75
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.75);
+                    // Mampatkan imej kepada data URL JPEG kualiti 0.85 untuk lebih jelas
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.85);
                     document.getElementById('menu-image-base64').value = dataUrl;
                     document.getElementById('admin-image-preview').src = dataUrl;
                     document.getElementById('admin-image-preview-container').classList.remove('hidden');
@@ -723,12 +732,14 @@
                         category: category,
                         image: image || '',
                         sold: originalItem ? originalItem.sold : false,
-                        hidden: originalItem ? originalItem.hidden : false
+                        hidden: originalItem ? originalItem.hidden : false,
+                        orderIndex: originalItem && originalItem.orderIndex !== undefined ? originalItem.orderIndex : targetId
                     });
                     showToast("✅ Menu dikemaskini di Firestore!");
                 } else {
                     // Modus baru (Create)
                     const newId = window.menus.length > 0 ? Math.max(...window.menus.map(m => Number(m.id))) + 1 : 1;
+                    const newOrderIndex = window.menus.length > 0 ? Math.max(...window.menus.map(m => (m.orderIndex !== undefined ? m.orderIndex : Number(m.id)))) + 1 : 1;
                     await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'menus', String(newId)), {
                         id: newId,
                         name: name,
@@ -736,7 +747,8 @@
                         category: category,
                         image: image || '',
                         sold: false,
-                        hidden: false
+                        hidden: false,
+                        orderIndex: newOrderIndex
                     });
                     showToast("✅ Menu baru ditambah ke Firestore!");
                 }
@@ -778,6 +790,34 @@
                 showToast("Gagal memadam menu.");
             }
             closeDeleteModal();
+        }
+
+        // Fungsi Tukar Susunan Menu (Atas / Bawah)
+        async function moveMenu(index, direction) {
+            if (direction === -1 && index === 0) return;
+            if (direction === 1 && index === window.menus.length - 1) return;
+
+            const currentItem = window.menus[index];
+            const swapItem = window.menus[index + direction];
+
+            const currentOrder = currentItem.orderIndex !== undefined ? currentItem.orderIndex : Number(currentItem.id);
+            const swapOrder = swapItem.orderIndex !== undefined ? swapItem.orderIndex : Number(swapItem.id);
+
+            let newCurrentOrder = swapOrder;
+            let newSwapOrder = currentOrder;
+
+            // Pastikan nilai tidak bertindih sepenuhnya
+            if (newCurrentOrder === newSwapOrder) {
+                newCurrentOrder = newSwapOrder + direction;
+            }
+
+            try {
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'menus', String(currentItem.id)), { orderIndex: newCurrentOrder });
+                await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'menus', String(swapItem.id)), { orderIndex: newSwapOrder });
+            } catch (e) {
+                console.error(e);
+                showToast("Gagal menyusun menu.");
+            }
         }
 
         // Fungsi Tetingkap Pop-up Gambar Besar (Image Preview Modal)
@@ -1224,7 +1264,7 @@
         window.closeDeleteModal = closeDeleteModal; window.confirmDeleteMenuItem = confirmDeleteMenuItem;
         window.previewImage = previewImage; window.clearSelectedImage = clearSelectedImage;
         window.showImagePreviewModal = showImagePreviewModal; window.closeImagePreviewModal = closeImagePreviewModal;
-        window.toggleTheme = toggleTheme; window.setCategory = setCategory;
+        window.toggleTheme = toggleTheme; window.setCategory = setCategory; window.moveMenu = moveMenu;
 
         // Mulakan sync masa nyata kedai
         initSync();
