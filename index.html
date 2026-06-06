@@ -136,11 +136,15 @@
                     <input type="hidden" id="menu-id-input">
                     <div>
                         <label class="block text-[10px] font-bold text-gray-600 dark:text-zinc-400 mb-1">Nama Hidangan:</label>
-                        <input type="text" id="menu-name-input" placeholder="Cth: Nasi Lemak Sambal Udang" class="w-full text-xs p-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 dark:text-zinc-100 focus:ring-2 focus:ring-orange-500 focus:outline-none bg-white dark:bg-zinc-800">
+                        <input type="text" id="menu-name-input" placeholder="Nama Menu" class="w-full text-xs p-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 dark:text-zinc-100 focus:ring-2 focus:ring-orange-500 focus:outline-none bg-white dark:bg-zinc-800">
                     </div>
                     <div>
                         <label class="block text-[10px] font-bold text-gray-600 dark:text-zinc-400 mb-1">Kategori Menu:</label>
-                        <input type="text" id="menu-category-input" placeholder="Cth: Makanan, Minuman, Sampingan" class="w-full text-xs p-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 dark:text-zinc-100 focus:ring-2 focus:ring-orange-500 focus:outline-none bg-white dark:bg-zinc-800">
+                        <input type="text" id="menu-category-input" placeholder="Kelas Makanan" class="w-full text-xs p-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 dark:text-zinc-100 focus:ring-2 focus:ring-orange-500 focus:outline-none bg-white dark:bg-zinc-800">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-bold text-gray-600 dark:text-zinc-400 mb-1">Item description</label>
+                        <textarea id="menu-description-input" rows="2" placeholder="Description" class="w-full text-xs p-2.5 rounded-xl border border-gray-200 dark:border-zinc-700 dark:text-zinc-100 focus:ring-2 focus:ring-orange-500 focus:outline-none bg-white dark:bg-zinc-800 resize-none"></textarea>
                     </div>
                     <div class="grid grid-cols-2 gap-2">
                         <div>
@@ -415,7 +419,8 @@
             <div class="w-full aspect-square bg-gray-100 dark:bg-zinc-800 rounded-2xl overflow-hidden mb-4 flex items-center justify-center">
                 <img id="modal-preview-img" src="" alt="" class="w-full h-full object-cover">
             </div>
-            <h3 id="modal-preview-title" class="text-md font-extrabold text-gray-800 dark:text-zinc-100 mb-4 truncate">Nama Menu</h3>
+            <h3 id="modal-preview-title" class="text-md font-extrabold text-gray-800 dark:text-zinc-100 mb-1 truncate">Nama Menu</h3>
+            <p id="modal-preview-desc" class="text-xs text-gray-600 dark:text-zinc-400 mb-4 whitespace-pre-wrap leading-relaxed max-h-32 overflow-y-auto hidden"></p>
             <button onclick="closeImagePreviewModal()" class="w-full bg-orange-500 hover:bg-orange-600 text-white text-xs font-extrabold py-3.5 rounded-xl transition-all shadow-md">Tutup</button>
         </div>
     </div>
@@ -571,7 +576,7 @@
 
                 // Memaparkan imej Base64 jika wujud, klik untuk pratinjau besar, atau letakkan placeholder lalai
                 const imageHtml = menu.image 
-                    ? `<img src="${menu.image}" alt="${menu.name}" class="w-full h-full object-cover cursor-zoom-in hover:scale-105 transition-transform duration-300" onclick="showImagePreviewModal('${menu.image}', '${menu.name.replace(/'/g, "\\'")}')">` 
+                    ? `<img src="${menu.image}" alt="${menu.name}" class="w-full h-full object-cover cursor-zoom-in hover:scale-105 transition-transform duration-300" onclick="showImagePreviewModal(${menu.id})">` 
                     : `<span class="text-2xl">🍽️</span>`;
 
                 const cardHtml = `
@@ -616,7 +621,7 @@
 
                 // Memaparkan imej Base64 jika wujud di menu admin list
                 const adminImageHtml = menu.image 
-                    ? `<img src="${menu.image}" alt="${menu.name}" class="w-full h-full object-cover cursor-zoom-in" onclick="showImagePreviewModal('${menu.image}', '${menu.name.replace(/'/g, "\\'")}')">` 
+                    ? `<img src="${menu.image}" alt="${menu.name}" class="w-full h-full object-cover cursor-zoom-in" onclick="showImagePreviewModal(${menu.id})">` 
                     : `<span class="text-sm">🍽️</span>`;
 
                 const itemHtml = `
@@ -714,6 +719,7 @@
             const category = document.getElementById('menu-category-input').value.trim() || 'Makanan';
             const price = parseFloat(document.getElementById('menu-price-input').value);
             const image = document.getElementById('menu-image-base64').value.trim();
+            const description = document.getElementById('menu-description-input').value.trim();
 
             if (!name || isNaN(price)) {
                 showToast("Sila lengkapkan nama dan harga menu!");
@@ -730,6 +736,7 @@
                         name: name,
                         price: price,
                         category: category,
+                        description: description,
                         image: image || '',
                         sold: originalItem ? originalItem.sold : false,
                         hidden: originalItem ? originalItem.hidden : false,
@@ -745,6 +752,7 @@
                         name: name,
                         price: price,
                         category: category,
+                        description: description,
                         image: image || '',
                         sold: false,
                         hidden: false,
@@ -821,10 +829,23 @@
         }
 
         // Fungsi Tetingkap Pop-up Gambar Besar (Image Preview Modal)
-        function showImagePreviewModal(imageSrc, itemName) {
+        function showImagePreviewModal(id) {
+            const item = window.menus.find(m => m.id === id);
+            if (!item) return;
+
             const m = document.getElementById('image-preview-modal');
-            document.getElementById('modal-preview-img').src = imageSrc;
-            document.getElementById('modal-preview-title').innerText = itemName;
+            document.getElementById('modal-preview-img').src = item.image || '';
+            document.getElementById('modal-preview-title').innerText = item.name || '';
+            
+            const descEl = document.getElementById('modal-preview-desc');
+            if (item.description && item.description.trim() !== "") {
+                descEl.innerText = item.description;
+                descEl.classList.remove('hidden');
+            } else {
+                descEl.innerText = '';
+                descEl.classList.add('hidden');
+            }
+
             m.classList.remove('hidden');
             setTimeout(() => m.style.opacity = '1', 10);
         }
@@ -1124,7 +1145,7 @@
                 });
             } catch (e) { console.error(e); }
 
-            const fullMessage = `Assalamualaikum, saya ingin memesan makanan:\n\n${orderText}\n${remarkText}${deliveryText}${paymentText}💰 *Jumlah:* RM ${total.toFixed(2)}`;
+            const fullMessage = `Assalamualaikum dan Hai, saya ingin memesan makanan:\n\n${orderText}\n${remarkText}${deliveryText}${paymentText}💰 *Jumlah:* RM ${total.toFixed(2)}`;
             window.location.href = `https://wa.me/601160653940?text=${encodeURIComponent(fullMessage)}`;
         }
 
@@ -1193,6 +1214,7 @@
             document.getElementById('menu-id-input').value = item.id;
             document.getElementById('menu-name-input').value = item.name;
             document.getElementById('menu-category-input').value = item.category || 'Makanan';
+            document.getElementById('menu-description-input').value = item.description || '';
             document.getElementById('menu-price-input').value = item.price;
             
             if (item.image) {
@@ -1211,6 +1233,7 @@
             document.getElementById('menu-id-input').value = '';
             document.getElementById('menu-name-input').value = '';
             document.getElementById('menu-category-input').value = 'Makanan';
+            document.getElementById('menu-description-input').value = '';
             document.getElementById('menu-price-input').value = '';
             clearSelectedImage();
             document.getElementById('cancel-edit-btn').classList.add('hidden');
