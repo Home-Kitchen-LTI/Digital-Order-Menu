@@ -1146,7 +1146,8 @@
             } catch (e) { console.error(e); }
 
             const fullMessage = `Assalamualaikum dan Hai, saya ingin memesan makanan:\n\n${orderText}\n${remarkText}${deliveryText}${paymentText}💰 *Jumlah:* RM ${total.toFixed(2)}`;
-            window.location.href = `https://wa.me/601160653940?text=${encodeURIComponent(fullMessage)}`;
+            // KOD BARU
+window.location.href = `https://api.whatsapp.com/send?phone=601160653940&text=${encodeURIComponent(fullMessage)}`;
         }
 
         async function saveSettings() {
