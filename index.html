@@ -41,6 +41,31 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
+
+        /* Custom Scrollbar Oren untuk Menu List */
+        .menu-scroll-container {
+            max-height: 55vh;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            padding-right: 0.5rem;
+        }
+        .menu-scroll-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .menu-scroll-container::-webkit-scrollbar-track {
+            background: rgba(0, 0, 0, 0.03);
+            border-radius: 10px;
+        }
+        body.dark .menu-scroll-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        .menu-scroll-container::-webkit-scrollbar-thumb {
+            background-color: #f97316;
+            border-radius: 10px;
+        }
+        .menu-scroll-container::-webkit-scrollbar-thumb:hover {
+            background-color: #ea580c;
+        }
     </style>
     <script>
         // Logik inisialisasi tema sebelum paparan dimuatkan sepenuhnya bagi mengelakkan kelipan (flickering)
@@ -83,6 +108,12 @@
                     <button onclick="loginAdmin()" class="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-extrabold py-3 rounded-xl shadow-md hover:from-orange-600 hover:to-amber-600 transition-all">
                         Log Masuk
                     </button>
+                    <!-- BUTANG CADANGAN / MAKLUM BALAS PELANGGAN -->
+                    <div class="pt-2 border-t border-gray-100 dark:border-zinc-800">
+                        <button onclick="openFeedbackModal()" class="w-full bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-700 dark:text-zinc-300 text-xs font-extrabold py-3 rounded-xl transition-all border border-gray-200/60 dark:border-zinc-700/60">
+                            ✍️ Beri Maklum Balas / Cadangan
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -100,6 +131,18 @@
                     </div>
                     <button id="btn-temp-close" onclick="toggleTemporaryClose()" class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-gray-300">
                         <span id="temp-close-indicator" class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out translate-x-0"></span>
+                    </button>
+                </div>
+
+                <!-- MAKLUM BALAS PELANGGAN (Khas Untuk Paparan Admin Sahaja) -->
+                <div class="bg-indigo-50/50 dark:bg-indigo-950/20 p-4 rounded-2xl border border-indigo-200/50 dark:border-indigo-900/30 flex justify-between items-center">
+                    <div>
+                        <h4 class="text-xs font-extrabold text-indigo-800 dark:text-indigo-400 capitalize tracking-wider flex items-center gap-1.5">💬 Maklum Balas Pelanggan</h4>
+                        <p class="text-[10px] text-gray-600 dark:text-zinc-400 mt-0.5">Baca maklum balas & cadangan.</p>
+                    </div>
+                    <button onclick="openAdminFeedbackModal()" class="relative bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] font-bold py-2 px-3 rounded-xl transition-all shadow-sm whitespace-nowrap flex items-center gap-1.5">
+                        Lihat Semua
+                        <span id="feedback-counter-badge" class="hidden bg-red-500 text-white text-[9px] font-extrabold px-1.5 py-0.5 rounded-full min-w-[16px] text-center shadow-sm">0</span>
                     </button>
                 </div>
 
@@ -170,7 +213,12 @@
                 </div>
 
                 <div class="space-y-3">
-                    <h4 class="text-xs font-extrabold text-gray-700 dark:text-zinc-400 capitalize tracking-wider">Senarai Menu Kedai</h4>
+                    <div class="flex justify-between items-center">
+                        <h4 class="text-xs font-extrabold text-gray-700 dark:text-zinc-400 capitalize tracking-wider">Senarai Menu Kedai</h4>
+                        <button onclick="openExpandMenuModal()" class="text-[10px] bg-amber-600 hover:bg-amber-700 text-white font-extrabold py-1 px-2.5 rounded-lg transition-all shadow-xs flex items-center gap-1">
+                            🔍 Expand View
+                        </button>
+                    </div>
                     <div id="admin-menu-list" class="space-y-2">
                         </div>
                 </div>
@@ -268,7 +316,7 @@
             <!-- TAB KATEGORI MENU -->
             <div id="category-tabs" class="flex gap-2 overflow-x-auto pb-3 mb-4 scrollbar-none snap-x"></div>
 
-            <div class="space-y-3" id="menu-list">
+            <div class="space-y-3 menu-scroll-container" id="menu-list">
                 </div>
 
             <div class="mt-4">
@@ -425,6 +473,60 @@
         </div>
     </div>
 
+    <!-- POP-UP BORANG MAKLUM BALAS / CADANGAN (PUBLIC) -->
+    <div id="feedback-modal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs hidden transition-all opacity-0">
+        <div class="bg-white dark:bg-zinc-900 rounded-3xl p-6 max-w-sm w-full shadow-2xl transition-colors duration-300">
+            <div class="text-3xl mb-3 text-center">✍️</div>
+            <h3 class="text-md font-extrabold text-gray-800 dark:text-zinc-100 mb-2 text-center">Cadangan & Maklum Balas</h3>
+            <p class="text-[11px] text-gray-500 dark:text-zinc-400 mb-4 text-center">Kongsikan sebarang penambahbaikan demi meningkatkan kualiti servis kami.</p>
+            <textarea id="feedback-text-input" rows="4" placeholder="Tuliskan maklum balas atau cadangan anda di sini..." class="w-full text-xs p-3 rounded-xl border border-gray-200 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-orange-500 bg-gray-50/50 dark:bg-zinc-800/50 dark:text-zinc-100 resize-none mb-4"></textarea>
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="closeFeedbackModal()" class="w-full bg-gray-250 dark:bg-zinc-800 text-gray-700 dark:text-zinc-300 text-xs font-extrabold py-3.5 rounded-xl">Batal</button>
+                <button onclick="submitFeedback()" class="w-full bg-orange-500 hover:bg-orange-600 text-white text-xs font-extrabold py-3.5 rounded-xl transition-all shadow-md">Hantar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- POP-UP MAKLUM BALAS (ADMIN VIEW) -->
+    <div id="admin-feedback-modal" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs hidden transition-all opacity-0">
+        <div class="bg-white dark:bg-zinc-900 rounded-3xl p-6 max-w-sm w-full shadow-2xl transition-colors duration-300 max-h-[85vh] flex flex-col relative">
+            <button onclick="closeAdminFeedbackModal()" class="absolute right-4 top-4 p-2 rounded-full bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-500 dark:text-zinc-400 transition-all z-10">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            <div class="text-3xl mb-3 text-center">💬</div>
+            <h3 class="text-md font-extrabold text-gray-800 dark:text-zinc-100 mb-2 text-center">Senarai Maklum Balas</h3>
+            <p class="text-[11px] text-gray-500 dark:text-zinc-400 mb-4 text-center">Maklum balas dan cadangan daripada pelanggan.</p>
+            
+            <div id="admin-feedback-list" class="space-y-3 overflow-y-auto scrollbar-none flex-1 py-2">
+                <p class="text-[10px] text-gray-500 dark:text-zinc-400 text-center py-4">Tiada maklum balas diterima lagi.</p>
+            </div>
+            
+            <div class="pt-4 border-t border-gray-100 dark:border-zinc-800 mt-2">
+                <button onclick="closeAdminFeedbackModal()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold py-3.5 rounded-xl transition-all shadow-md">Tutup Paparan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- POP-UP EXPAND VIEW SENARAI MENU (ADMIN VIEW) -->
+    <div id="admin-expand-menu-modal" class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs hidden transition-all opacity-0">
+        <div class="bg-white dark:bg-zinc-900 rounded-3xl p-6 max-w-sm w-full shadow-2xl transition-colors duration-300 max-h-[85vh] flex flex-col relative">
+            <button onclick="closeExpandMenuModal()" class="absolute right-4 top-4 p-2 rounded-full bg-gray-100 dark:bg-zinc-800 hover:bg-gray-200 dark:hover:bg-zinc-700 text-gray-500 dark:text-zinc-400 transition-all z-10">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+            <div class="text-3xl mb-3 text-center">📋</div>
+            <h3 class="text-md font-extrabold text-gray-800 dark:text-zinc-100 mb-2 text-center">Urus Senarai Menu Kedai</h3>
+            <p class="text-[11px] text-gray-500 dark:text-zinc-400 mb-4 text-center">Kembangkan paparan untuk memudahkan penyusunan, suntingan, dan kemas kini menu.</p>
+            
+            <div id="admin-expand-menu-list" class="space-y-3 overflow-y-auto scrollbar-none flex-1 py-2 pr-1">
+                <p class="text-[10px] text-gray-500 dark:text-zinc-400 text-center py-4">Tiada menu dalam senarai kedai.</p>
+            </div>
+            
+            <div class="pt-4 border-t border-gray-100 dark:border-zinc-800 mt-2">
+                <button onclick="closeExpandMenuModal()" class="w-full bg-amber-600 hover:bg-amber-700 text-white text-xs font-extrabold py-3.5 rounded-xl transition-all shadow-md">Tutup Paparan</button>
+            </div>
+        </div>
+    </div>
+
 
 <script>
     tailwind.config = {
@@ -464,6 +566,7 @@
 
         window.menus = [];
         window.settings = { openHour: 7, closeHour: 20, offDay: 3, isTemporarilyClosed: false };
+        window.feedbacks = [];
         window.cart = {};
         window.selectedMethod = 'COD';
         window.selectedPaymentMethod = 'QR';
@@ -519,6 +622,31 @@
                 }
                 calculateTotal();
                 updateStoreStatus();
+            });
+
+            // 3. Realtime Listen untuk Maklum Balas (Feedback)
+            onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'feedback'), (querySnapshot) => {
+                const fetchedFeedbacks = [];
+                querySnapshot.forEach((doc) => {
+                    fetchedFeedbacks.push({ ...doc.data(), docId: doc.id });
+                });
+                // Susun maklum balas berdasarkan masa terbaharu
+                window.feedbacks = fetchedFeedbacks.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                
+                // Kemaskini badge counter maklum balas
+                const feedbackBadge = document.getElementById('feedback-counter-badge');
+                if (feedbackBadge) {
+                    if (window.feedbacks.length > 0) {
+                        feedbackBadge.innerText = window.feedbacks.length;
+                        feedbackBadge.classList.remove('hidden');
+                    } else {
+                        feedbackBadge.classList.add('hidden');
+                    }
+                }
+
+                if (sessionStorage.getItem('admin_logged_in') === 'true') {
+                    renderAdminFeedbackList();
+                }
             });
         };
 
@@ -629,7 +757,10 @@
         // Fungsi Render List Kawalan Admin Sidebar dengan sokongan Dark Mode
         function renderAdminMenuList() {
             const adminList = document.getElementById('admin-menu-list');
-            adminList.innerHTML = '';
+            const expandList = document.getElementById('admin-expand-menu-list');
+            
+            if (adminList) adminList.innerHTML = '';
+            if (expandList) expandList.innerHTML = '';
 
             window.menus.forEach((menu, index) => {
                 const isSold = menu.sold === true;
@@ -678,7 +809,37 @@
                         </div>
                     </div>
                 `;
-                adminList.innerHTML += itemHtml;
+                if (adminList) adminList.innerHTML += itemHtml;
+                if (expandList) expandList.innerHTML += itemHtml;
+            });
+
+            if (window.menus.length === 0 && expandList) {
+                expandList.innerHTML = `<p class="text-[10px] text-gray-500 dark:text-zinc-400 text-center py-4">Tiada menu dalam senarai kedai.</p>`;
+            }
+        }
+
+        // Render List Maklum Balas Khas Untuk Paparan Admin Sahaja
+        function renderAdminFeedbackList() {
+            const listEl = document.getElementById('admin-feedback-list');
+            if (!listEl) return;
+            listEl.innerHTML = '';
+
+            if (window.feedbacks.length === 0) {
+                listEl.innerHTML = `<p class="text-[10px] text-gray-500 dark:text-zinc-400 text-center py-4">Tiada maklum balas diterima lagi.</p>`;
+                return;
+            }
+
+            window.feedbacks.forEach(fb => {
+                const dateStr = new Date(fb.timestamp).toLocaleString('ms-MY', { hour12: true });
+                listEl.innerHTML += `
+                    <div class="p-2.5 bg-white dark:bg-zinc-800 rounded-xl border border-gray-100 dark:border-zinc-700 shadow-2xs space-y-1 relative group">
+                        <p class="text-[11px] text-gray-800 dark:text-zinc-100 whitespace-pre-wrap leading-relaxed">${fb.content}</p>
+                        <div class="flex justify-between items-center pt-1 border-t border-gray-50 dark:border-zinc-700/50">
+                            <span class="text-[9px] text-gray-400 dark:text-zinc-500 font-semibold">${dateStr}</span>
+                            <button onclick="deleteFeedback('${fb.docId}')" class="text-[9px] text-red-500 hover:underline font-bold opacity-0 group-hover:opacity-100 transition-opacity">Padam</button>
+                        </div>
+                    </div>
+                `;
             });
         }
 
@@ -796,6 +957,20 @@
             showDeleteModal();
         }
 
+        // Fungsi Tetingkap Pop-up Expand Senarai Menu (Admin View)
+        function openExpandMenuModal() {
+            const m = document.getElementById('admin-expand-menu-modal');
+            m.classList.remove('hidden');
+            setTimeout(() => m.style.opacity = '1', 10);
+            renderAdminMenuList();
+        }
+
+        function closeExpandMenuModal() {
+            const m = document.getElementById('admin-expand-menu-modal');
+            m.style.opacity = '0';
+            setTimeout(() => m.classList.add('hidden'), 300);
+        }
+
         function showDeleteModal() {
             const m = document.getElementById('delete-confirm-modal');
             m.classList.remove('hidden');
@@ -871,6 +1046,7 @@
             setTimeout(() => m.style.opacity = '1', 10);
         }
 
+        // Tutup Pop-up Gambar Besar
         function closeImagePreviewModal() {
             const m = document.getElementById('image-preview-modal');
             m.style.opacity = '0';
@@ -1015,6 +1191,67 @@
         }
 
         // Semak status pembukaan waktu & fungsi tutup sementara
+        // Pop-up Maklum Balas Khas (Pelanggan)
+        function openFeedbackModal() {
+            const m = document.getElementById('feedback-modal');
+            m.classList.remove('hidden');
+            setTimeout(() => m.style.opacity = '1', 10);
+        }
+
+        function closeFeedbackModal() {
+            const m = document.getElementById('feedback-modal');
+            m.style.opacity = '0';
+            setTimeout(() => {
+                m.classList.add('hidden');
+                document.getElementById('feedback-text-input').value = '';
+            }, 300);
+        }
+
+        // Pop-up Maklum Balas (Admin View)
+        function openAdminFeedbackModal() {
+            const m = document.getElementById('admin-feedback-modal');
+            m.classList.remove('hidden');
+            setTimeout(() => m.style.opacity = '1', 10);
+        }
+
+        function closeAdminFeedbackModal() {
+            const m = document.getElementById('admin-feedback-modal');
+            m.style.opacity = '0';
+            setTimeout(() => m.classList.add('hidden'), 300);
+        }
+
+        // Simpan Maklum Balas Pelanggan ke Firestore
+        async function submitFeedback() {
+            const text = document.getElementById('feedback-text-input').value.trim();
+            if (!text) {
+                showToast("Sila tulis maklum balas atau cadangan anda!");
+                return;
+            }
+
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'public', 'data', 'feedback'), {
+                    content: text,
+                    timestamp: new Date().toISOString()
+                });
+                showToast("✅ Terima kasih atas perkongsian maklumbalas anda.");
+                closeFeedbackModal();
+            } catch (err) {
+                console.error(err);
+                showToast("Gagal menghantar cadangan.");
+            }
+        }
+
+        // Padam Maklum Balas (Untuk Admin sahaja)
+        async function deleteFeedback(docId) {
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', 'feedback', docId));
+                showToast("🗑️ Maklum balas berjaya dipadam.");
+            } catch (err) {
+                console.error(err);
+                showToast("Ralat semasa memadam.");
+            }
+        }
+
         function isStoreOpen() {
             if (window.settings.isTemporarilyClosed === true) return false;
 
@@ -1095,6 +1332,7 @@
             showToast(isDark ? "Mod Gelap diaktifkan!" : "Mod Cerah diaktifkan!");
         }
 
+        // Sync ikon semasa load halaman mengikut tema terkini
         // Sync ikon semasa load halaman mengikut tema terkini
         function syncThemeIconOnLoad() {
             const themeIcon = document.getElementById('theme-icon');
@@ -1220,6 +1458,7 @@ window.location.href = `https://api.whatsapp.com/send?phone=601160653940&text=${
             if (loggedIn) {
                 renderAdminMenuList();
                 updateAdminSettingsUI();
+                renderAdminFeedbackList();
             }
         }
 
@@ -1260,6 +1499,10 @@ window.location.href = `https://api.whatsapp.com/send?phone=601160653940&text=${
         function editMenuItemForm(id) {
             const item = window.menus.find(m => m.id === id);
             if (!item) return;
+            
+            // Tutup Expand View Modal jika terbuka supaya admin dapat lihat borang suntingan dengan jelas
+            closeExpandMenuModal();
+
             document.getElementById('form-title').innerText = "Kemaskini Menu";
             document.getElementById('menu-id-input').value = item.id;
             document.getElementById('menu-name-input').value = item.name;
@@ -1339,6 +1582,10 @@ window.location.href = `https://api.whatsapp.com/send?phone=601160653940&text=${
         window.previewImage = previewImage; window.clearSelectedImage = clearSelectedImage;
         window.showImagePreviewModal = showImagePreviewModal; window.closeImagePreviewModal = closeImagePreviewModal;
         window.toggleTheme = toggleTheme; window.setCategory = setCategory; window.moveMenu = moveMenu;
+        window.openFeedbackModal = openFeedbackModal; window.closeFeedbackModal = closeFeedbackModal;
+        window.submitFeedback = submitFeedback; window.deleteFeedback = deleteFeedback;
+        window.openAdminFeedbackModal = openAdminFeedbackModal; window.closeAdminFeedbackModal = closeAdminFeedbackModal;
+        window.openExpandMenuModal = openExpandMenuModal; window.closeExpandMenuModal = closeExpandMenuModal;
 
         // Mulakan sync masa nyata kedai
         initSync();
