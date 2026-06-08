@@ -73,12 +73,12 @@
                 <p class="text-xs text-red-500 leading-relaxed">Restricted.</p>
                 <div class="space-y-3">
                     <div>
-                        <label class="block text-[10px] font-bold text-gray-600 dark:text-zinc-400 capitalize mb-1">Phone Number</label>
-                        <input type="text" id="admin-user" placeholder="+60123456789" class="w-full text-xs p-3 rounded-xl border border-gray-200 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-orange-500 bg-gray-50/50 dark:bg-zinc-800/50 dark:text-zinc-100">
+                        <label class="block text-[10px] font-bold text-gray-600 dark:text-zinc-400 capitalize mb-1">Email Address</label>
+                        <input type="email" id="admin-user" placeholder="admin@example.com" class="w-full text-xs p-3 rounded-xl border border-gray-200 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-orange-500 bg-gray-50/50 dark:bg-zinc-800/50 dark:text-zinc-100">
                     </div>
                     <div>
-                        <label class="block text-[10px] font-bold text-gray-600 dark:text-zinc-400 uppercase mb-1">OTP-6 Digit</label>
-                        <input type="password" id="admin-pass" placeholder="••••••" class="w-full text-xs p-3 rounded-xl border border-gray-200 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-orange-500 bg-gray-50/50 dark:bg-zinc-800/50 dark:text-zinc-100">
+                        <label class="block text-[10px] font-bold text-gray-600 dark:text-zinc-400 uppercase mb-1">Password</label>
+                        <input type="password" id="admin-pass" placeholder="••••••••" class="w-full text-xs p-3 rounded-xl border border-gray-200 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-orange-500 bg-gray-50/50 dark:bg-zinc-800/50 dark:text-zinc-100">
                     </div>
                     <button onclick="loginAdmin()" class="w-full bg-gradient-to-r from-orange-500 to-amber-500 text-white text-xs font-extrabold py-3 rounded-xl shadow-md hover:from-orange-600 hover:to-amber-600 transition-all">
                         Log Masuk
@@ -441,7 +441,7 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, signInAnonymously, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager, doc, setDoc, collection, onSnapshot, updateDoc, deleteDoc, addDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const firebaseConfig = {
@@ -475,7 +475,14 @@
 
         // Realtime Data Sync Setup
         const initSync = async () => {
-            await signInAnonymously(auth);
+            // Kita tidak memanggil signInAnonymously() secara langsung di sini sekiranya admin sudah sedia log masuk menggunakan Email & Password.
+            // Namun untuk capaian pengguna awam membaca menu, kita kekalkan log masuk tanpa nama jika tiada pengguna log masuk.
+            auth.onAuthStateChanged(async (user) => {
+                if (!user) {
+                    await signInAnonymously(auth);
+                }
+                checkLoginStatus();
+            });
 
             // 1. Realtime Listen untuk Settings
             onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'settings', 'global'), (docSnap) => {
@@ -566,6 +573,18 @@
                 menuList.innerHTML = `<div class="text-center py-8 text-gray-500 dark:text-zinc-400 text-xs">😔 Tiada menu dalam kategori ini buat masa sekarang.</div>`;
                 return;
             }
+
+            // Susun atur menu: item "SOLD" ditolak ke bawah, item sedia ada kekal di atas
+            filteredMenus.sort((a, b) => {
+                if (a.sold === b.sold) {
+                    // Jika status 'sold' sama, kekalkan susunan asal dari admin (orderIndex)
+                    const orderA = a.orderIndex !== undefined ? a.orderIndex : Number(a.id);
+                    const orderB = b.orderIndex !== undefined ? b.orderIndex : Number(b.id);
+                    return orderA - orderB;
+                }
+                // Jika tidak sama, item sold (true) dihantar ke bawah (1), tidak sold ke atas (-1)
+                return a.sold ? 1 : -1;
+            });
 
             filteredMenus.forEach(menu => {
                 const currentQty = window.cart[menu.id] || 0;
@@ -967,6 +986,7 @@
             calculateTotal();
         }
 
+        // Menukar Kaedah Pembayaran
         function togglePaymentMethod(method) {
             window.selectedPaymentMethod = method;
             const btnQr = document.getElementById('label-pay-qr');
@@ -980,6 +1000,7 @@
             }
         }
 
+        // Menukar Pilihan Fasa Kawasan
         function togglePhase(phase) {
             window.selectedPhase = phase;
             const btnPhase1 = document.getElementById('label-phase-1');
@@ -1186,7 +1207,13 @@ window.location.href = `https://api.whatsapp.com/send?phone=601160653940&text=${
         }
 
         function checkLoginStatus() {
-            const loggedIn = sessionStorage.getItem('admin_logged_in') === 'true';
+            const user = auth.currentUser;
+            // Anggap logged in sebagai admin jika ada pengguna log masuk dan pengguna tersebut bukan anonymous (tanpa nama)
+            const loggedIn = user && !user.isAnonymous;
+            
+            // Simpan status pada sessionStorage untuk keserasian dengan fungsi lain
+            sessionStorage.setItem('admin_logged_in', loggedIn ? 'true' : 'false');
+
             document.getElementById('auth-section').classList.toggle('hidden', loggedIn);
             const adminSection = document.getElementById('admin-section');
             adminSection.classList.toggle('hidden', !loggedIn);
@@ -1196,18 +1223,38 @@ window.location.href = `https://api.whatsapp.com/send?phone=601160653940&text=${
             }
         }
 
-        function loginAdmin() {
-            if (document.getElementById('admin-user').value === 'admin' && document.getElementById('admin-pass').value === 'admin') {
-                sessionStorage.setItem('admin_logged_in', 'true');
-                checkLoginStatus();
+        async function loginAdmin() {
+            const email = document.getElementById('admin-user').value.trim();
+            const password = document.getElementById('admin-pass').value;
+
+            if (!email || !password) {
+                showToast("Sila masukkan email dan password!");
+                return;
+            }
+
+            try {
+                // Log masuk menggunakan Firebase Authentication Email & Password
+                await signInWithEmailAndPassword(auth, email, password);
                 showToast("🔐 Log masuk berjaya!");
-            } else { showToast("Phone Number did not recognized!"); }
+                checkLoginStatus();
+            } catch (error) {
+                console.error("Gagal log masuk:", error);
+                showToast("Email atau password salah / tidak dikenali!");
+            }
         }
 
-        function logoutAdmin() {
-            sessionStorage.removeItem('admin_logged_in');
-            checkLoginStatus();
-            showToast("🔓 Log keluar berjaya.");
+        async function logoutAdmin() {
+            try {
+                // Log keluar daripada akaun Firebase
+                await signOut(auth);
+                // Tukar kembali ke anonymous log masuk untuk membolehkan pembeli membaca database
+                await signInAnonymously(auth);
+                showToast("🔓 Log keluar berjaya.");
+                checkLoginStatus();
+            } catch (error) {
+                console.error("Gagal log keluar:", error);
+                showToast("Ralat berlaku semasa log keluar.");
+            }
         }
 
         function editMenuItemForm(id) {
@@ -1231,6 +1278,7 @@ window.location.href = `https://api.whatsapp.com/send?phone=601160653940&text=${
             document.getElementById('cancel-edit-btn').classList.remove('hidden');
         }
 
+        // Set semula borang
         function resetForm() {
             document.getElementById('form-title').innerText = "Tambah Menu Baru";
             document.getElementById('menu-id-input').value = '';
