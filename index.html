@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ms">
 <head>
@@ -175,20 +176,38 @@
         <!-- ==================== CUSTOMER VIEW ==================== -->
         <div v-if="!isAdminMode">
           
-          <!-- Hero Section -->
-          <div class="relative rounded-3xl overflow-hidden mb-8 text-white p-6 md:p-10 shadow-xl bg-cover bg-center" style="background-image: url('https://firebasestorage.googleapis.com/v0/b/iodigital-eb34a.firebasestorage.app/o/Hero%2F4F5528E0-AB51-4094-9380-50AFFCAAE15B.png?alt=media&token=a395f205-f24b-44c0-812b-d89beb2a1f1f');">
-            <!-- Dark overlay for readability -->
-            <div class="absolute inset-0 bg-black/40 z-0"></div>
+          <!-- Hero Section with Dynamic Fade Slider -->
+          <div class="relative rounded-3xl overflow-hidden mb-8 text-white p-6 md:p-10 shadow-xl min-h-[320px] md:min-h-[400px] flex items-center">
+            <!-- Background Background Transitions (Slide selepas 5 saat) -->
+            <div class="absolute inset-0 z-0">
+              <transition-group name="list">
+                <div v-for="(image, index) in storeSettings.heroImages" :key="image"
+                  v-show="currentHeroIndex === index"
+                  class="absolute inset-0 bg-cover bg-center transition-all duration-1000 ease-in-out"
+                  :style="{ backgroundImage: 'url(' + image + ')' }">
+                </div>
+              </transition-group>
+              <!-- Dark overlay for readability -->
+              <div class="absolute inset-0 bg-black/45 z-10"></div>
+            </div>
 
-            <div class="absolute right-0 bottom-0 opacity-10 pointer-events-none transform translate-y-1/4 translate-x-1/6 z-0">
+            <div class="absolute right-0 bottom-0 opacity-10 pointer-events-none transform translate-y-1/4 translate-x-1/6 z-10">
               <i class="fas fa-bowl-food text-[240px]"></i>
             </div>
-            <div class="relative z-10 max-w-xl">
-              <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs bg-white/20 backdrop-blur font-bold tracking-wider uppercase mb-4">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400" :class="{'animate-ping': isStoreOpen}"></span>
-                {{ isStoreOpen ? 'Menerima Tempahan' : 'Tutup Sementara' }}
-              </span>
-              <h2 class="text-4xl md:text-6xl tracking-wide mb-2 leading-tight font-bold" style="font-family: 'Caveat', cursive;">Makan Sedap, Rasa Rumah Sendiri!</h2>
+            <div class="relative z-20 max-w-xl w-full">
+              <!-- Status and Coverage Area Badges -->
+              <div class="flex flex-wrap gap-2.5 mb-4">
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] bg-white/20 backdrop-blur font-bold tracking-wider uppercase">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400" :class="{'animate-ping': isStoreOpen}"></span>
+                  {{ isStoreOpen ? 'Menerima Tempahan' : 'Tutup Sementara' }}
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] bg-amber-500/90 backdrop-blur font-bold tracking-wider uppercase">
+                  <i class="fas fa-location-dot"></i>
+                  <span>Sekitar Bandar Lagenda Teluk Intan</span>
+                </span>
+              </div>
+              
+              <h2 class="text-4xl md:text-6xl tracking-wide mb-2 leading-tight font-bold animate-[bounce-subtle_1s_ease-out]" style="font-family: 'Caveat', cursive;">Makan Sedap, Rasa Rumah Sendiri!</h2>
               <p class="text-sm md:text-base text-amber-50 font-medium mb-5">Pesan hidangan kegemaran anda secara langsung dari dapur kami ke peranti anda dengan penghantaran pantas!</p>
               
               <!-- Green WhatsApp Button inside Hero Section -->
@@ -210,6 +229,15 @@
                   <span>Cas Penghantaran bermula: RM {{ parseFloat(storeSettings.codCharge || 1.00).toFixed(2) }}</span>
                 </span>
               </div>
+            </div>
+
+            <!-- Slider Dots Indicator -->
+            <div v-if="storeSettings.heroImages && storeSettings.heroImages.length > 1" class="absolute bottom-4 right-6 z-20 flex gap-2">
+              <button v-for="(img, idx) in storeSettings.heroImages" :key="idx" 
+                @click="currentHeroIndex = idx; resetHeroTimer()"
+                class="w-2.5 h-2.5 rounded-full transition-all duration-300"
+                :class="currentHeroIndex === idx ? 'bg-brand-500 scale-125 w-6' : 'bg-white/50 hover:bg-white/80'">
+              </button>
             </div>
           </div>
 
@@ -721,6 +749,30 @@
                   <div class="w-3.5 h-3.5 rounded-full" :class="isStoreOpen ? 'bg-emerald-500 animate-ping' : 'bg-red-500'"></div>
                 </div>
 
+                <!-- NEW ADMIN FEATURE: Hero Banner Image Slider Settings -->
+                <div class="border-t border-gray-100 dark:border-gray-700/50 pt-6">
+                  <h4 class="font-extrabold text-sm text-gray-900 dark:text-gray-100 capitalize tracking-wider mb-2">Pengurusan Slider Hero (Banner)</h4>
+                  <p class="text-xs text-gray-400 dark:text-gray-500 mb-4">Tambahkan senarai pautan gambar (URL Firebase/Storage) untuk paparan Hero Section. Gambar akan berpusing setiap 5 saat.</p>
+                  
+                  <div class="space-y-3">
+                    <div v-for="(image, idx) in storeSettings.heroImages" :key="idx" class="flex gap-2 items-center">
+                      <div class="w-12 h-12 rounded-lg bg-gray-100 dark:bg-darkbg-700 shrink-0 overflow-hidden border border-gray-200 dark:border-gray-600">
+                        <img :src="image" class="w-full h-full object-cover" @error="handleImageError">
+                      </div>
+                      <input type="text" v-model="storeSettings.heroImages[idx]" @change="saveStoreSettings"
+                        placeholder="Pautan URL gambar..." 
+                        class="flex-1 px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-darkbg-800 text-xs focus:ring-1 focus:ring-brand-500/20 focus:border-brand-500 outline-none transition">
+                      <button @click="removeHeroImageRow(idx)" class="text-red-500 hover:text-red-700 p-2 shrink-0">
+                        <i class="fas fa-trash-alt"></i>
+                      </button>
+                    </div>
+
+                    <button @click="addHeroImageRow" class="text-xs text-brand-600 dark:text-brand-400 font-bold hover:underline flex items-center gap-1 mt-2">
+                      <i class="fas fa-plus-circle"></i> Tambah URL Gambar Hero
+                    </button>
+                  </div>
+                </div>
+
                 <!-- Live Setting Save status banner -->
                 <div v-if="settingsSaving" class="text-xs font-semibold text-emerald-500 text-center animate-pulse py-1">
                   <i class="fas fa-circle-notch animate-spin mr-1"></i> Menyimpan perubahan ke Firestore...
@@ -1187,13 +1239,20 @@
         const isPopping = ref(null);
         const jiggleCart = ref(false);
 
+        // State Slider Index & Timer
+        const currentHeroIndex = ref(0);
+        let heroTimer = null;
+
         // Core business hours & settings state (Live from Firestore)
         const storeSettings = ref({
           openHour: 6, // 6 Pagi
           closeHour: 18, // 6 Petang
           offDay: 5, // Default Tutup: Friday (Jumaat)
           manualOverride: 'OPEN', // 'OPEN' or 'CLOSED'
-          codCharge: 1.00 // RM 1.00 standard charge
+          codCharge: 1.00, // RM 1.00 standard charge
+          heroImages: [
+            'https://firebasestorage.googleapis.com/v0/b/iodigital-eb34a.firebasestorage.app/o/Hero%2F4F5528E0-AB51-4094-9380-50AFFCAAE15B.png?alt=media&token=a395f205-f24b-44c0-812b-d89beb2a1f1f'
+          ]
         });
         const settingsSaving = ref(false);
 
@@ -1245,6 +1304,27 @@
           variants: []
         });
 
+        // --- HERO SLIDER NAVIGATION ---
+        const startHeroTimer = () => {
+          stopHeroTimer();
+          heroTimer = setInterval(() => {
+            if (storeSettings.value.heroImages && storeSettings.value.heroImages.length > 0) {
+              currentHeroIndex.value = (currentHeroIndex.value + 1) % storeSettings.value.heroImages.length;
+            }
+          }, 5000); // Bertukar gambar setiap 5 saat
+        };
+
+        const stopHeroTimer = () => {
+          if (heroTimer) {
+            clearInterval(heroTimer);
+            heroTimer = null;
+          }
+        };
+
+        const resetHeroTimer = () => {
+          startHeroTimer();
+        };
+
         // --- AUTHENTICATION FLOWS (RULE 3 compliance) ---
         onMounted(() => {
           // Initialize Dark / Light theme defaults
@@ -1284,6 +1364,9 @@
               adminUser.value = null;
             }
           });
+
+          // Mulakan pusingan slider hero
+          startHeroTimer();
         });
 
         // --- FIRESTORE PERSISTENT REAL-TIME LISTENERS (RULE 2 & 1 compliant) ---
@@ -1293,7 +1376,14 @@
           
           const unsubscribeSettings = onSnapshot(settingsDocRef, (docSnap) => {
             if (docSnap.exists()) {
-              storeSettings.value = { ...storeSettings.value, ...docSnap.data() };
+              const incomingData = docSnap.data();
+              // Pastikan heroImages sentiasa berformat array
+              if (!incomingData.heroImages || !Array.isArray(incomingData.heroImages) || incomingData.heroImages.length === 0) {
+                incomingData.heroImages = [
+                  'https://firebasestorage.googleapis.com/v0/b/iodigital-eb34a.firebasestorage.app/o/Hero%2F4F5528E0-AB51-4094-9380-50AFFCAAE15B.png?alt=media&token=a395f205-f24b-44c0-812b-d89beb2a1f1f'
+                ];
+              }
+              storeSettings.value = { ...storeSettings.value, ...incomingData };
             } else {
               // Populate default Firestore settings doc on first launch
               setDoc(settingsDocRef, storeSettings.value).catch(err => {
@@ -1325,6 +1415,7 @@
           return () => {
             unsubscribeSettings();
             unsubscribeMenu();
+            stopHeroTimer();
           };
         }, { immediate: true });
 
@@ -1722,7 +1813,8 @@
               closeHour: parseInt(storeSettings.value.closeHour),
               offDay: storeSettings.value.offDay === "" ? "" : parseInt(storeSettings.value.offDay),
               manualOverride: storeSettings.value.manualOverride,
-              codCharge: parseFloat(storeSettings.value.codCharge || 1.00)
+              codCharge: parseFloat(storeSettings.value.codCharge || 1.00),
+              heroImages: storeSettings.value.heroImages.filter(url => url && url.trim() !== '')
             });
           } catch (err) {
             console.error("Settings update failed:", err);
@@ -1734,6 +1826,25 @@
 
         const toggleEmergencyOverride = () => {
           storeSettings.value.manualOverride = storeSettings.value.manualOverride === 'OPEN' ? 'CLOSED' : 'OPEN';
+          saveStoreSettings();
+        };
+
+        // Add/Remove Hero Slider URL rows
+        const addHeroImageRow = () => {
+          if (!storeSettings.value.heroImages) {
+            storeSettings.value.heroImages = [];
+          }
+          storeSettings.value.heroImages.push('');
+        };
+
+        const removeHeroImageRow = (index) => {
+          storeSettings.value.heroImages.splice(index, 1);
+          if (storeSettings.value.heroImages.length === 0) {
+            // Lalai fallback imej sekiranya kosong
+            storeSettings.value.heroImages = [
+              'https://firebasestorage.googleapis.com/v0/b/iodigital-eb34a.firebasestorage.app/o/Hero%2F4F5528E0-AB51-4094-9380-50AFFCAAE15B.png?alt=media&token=a395f205-f24b-44c0-812b-d89beb2a1f1f'
+            ];
+          }
           saveStoreSettings();
         };
 
@@ -1959,6 +2070,8 @@
           activeLightbox,
           isPopping,
           jiggleCart,
+          currentHeroIndex,
+          resetHeroTimer,
           storeSettings,
           settingsSaving,
           menuItems,
@@ -2005,6 +2118,8 @@
           logoutAdmin,
           saveStoreSettings,
           toggleEmergencyOverride,
+          addHeroImageRow,
+          removeHeroImageRow,
           openMenuFormModal,
           closeMenuFormModal,
           generateImageForMenu,
